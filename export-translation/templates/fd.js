@@ -4,14 +4,17 @@ const SHEET_NAME = "json_tranlsation";
 const HEADER_ROW_INDEX = 1; // Excel rows 2
 const DATA_START_ROW_INDEX = 2; // Excel rows 3 and onwards
 const TRANSLATION_COL_START = 1; // Column B
-const TRANSLATION_COL_END = 9; // Column J
-const EULA_COL_START = 13; // Column N
-const EULA_COL_END = 21; // Column V
+const TRANSLATION_COL_END = 11; // Column L
+const EULA_COL_START = 15; // Column P
+const EULA_COL_END = 25; // Column Z
 
 function normalizeLangFolder(lang) {
   if (!lang) return "";
   const lowered = String(lang).trim().toLowerCase();
-  return lowered === "italian" ? "ita" : lowered.substring(0, 2);
+  if (lowered === "italian") return "ita";
+  if (lowered === "finnish") return "fi";
+  if (lowered === "portuguese") return "pt";
+  return lowered.substring(0, 2);
 }
 
 function parseLine(rawValue) {
@@ -24,7 +27,7 @@ function parseLine(rawValue) {
 
 function buildHeaderRow(sheet) {
   const headerRow = [];
-  for (let col = 1; col <= 21; col += 1) {
+  for (let col = 1; col <= EULA_COL_END; col += 1) {
     const cell = sheet[XLSX.utils.encode_cell({ r: HEADER_ROW_INDEX, c: col })];
     headerRow[col] = cell ? cell.w || cell.v : undefined;
   }
