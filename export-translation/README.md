@@ -79,11 +79,13 @@ Destination behavior:
 
 - Worksheet name: json_tranlsation (falls back to first sheet for CSV)
 - Header row: Excel row 2
-- Translation column: B only
-- EULA column: N only
+- Translation columns: B..J
+- EULA columns: N..V
 - Data rows start at Excel row 3
 - Cell format: "key": "value"
-- Output is written to a single `en/` folder (translation.json and eula.json).
+- Supported languages: English, Spanish, Swedish, Norwegian, Polish, German, Danish, French, Italian.
+- Each language is written to its own folder (`<lang>/translation.json` and `<lang>/eula.json`).
+- Italian is written to the `ita/` folder; other language folders use the first two lowercase characters.
 
 ## Browser Adaptation Note
 

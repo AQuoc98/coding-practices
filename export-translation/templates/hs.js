@@ -3,9 +3,17 @@ import * as XLSX from "xlsx";
 const SHEET_NAME = "json_tranlsation";
 const HEADER_ROW_INDEX = 1; // Excel row 2
 const DATA_START_ROW_INDEX = 2; // Excel row 3 and onwards
-const TRANSLATION_COL = 1; // Column B
-const EULA_COL = 13; // Column N
-const LANG_FOLDER = "en";
+const TRANSLATION_COL_START = 1; // Column B
+const TRANSLATION_COL_END = 9; // Column J
+const EULA_COL_START = 13; // Column N
+const EULA_COL_END = 21; // Column V
+
+function normalizeLangFolder(lang) {
+  if (!lang) return "";
+  const lowered = String(lang).trim().toLowerCase();
+  if (lowered === "italian") return "ita";
+  return lowered.substring(0, 2);
+}
 
 function parseLine(rawValue) {
   if (!rawValue || typeof rawValue !== "string") return null;
@@ -15,15 +23,60 @@ function parseLine(rawValue) {
   return { key: match[1], value: match[2] };
 }
 
-function populateColumn(sheet, range, targetData, col) {
+function buildHeaderRow(sheet) {
+  const headerRow = [];
+  for (let col = TRANSLATION_COL_START; col <= EULA_COL_END; col += 1) {
+    const cell = sheet[XLSX.utils.encode_cell({ r: HEADER_ROW_INDEX, c: col })];
+    headerRow[col] = cell ? cell.w || cell.v : undefined;
+  }
+  return headerRow;
+}
+
+function initLanguageBuckets(headerRow, startCol, endCol) {
+  const data = {};
+  for (let col = startCol; col <= endCol; col += 1) {
+    const langName = String(headerRow[col] || "").trim();
+    if (langName) data[langName] = {};
+  }
+  return data;
+}
+
+function getIgnoredHeaderColumns(sheet, range, headerRow) {
+  const ignored = [];
+  for (let col = TRANSLATION_COL_END + 1; col < EULA_COL_START; col += 1) {
+    let hasParseableData = false;
+    for (let row = DATA_START_ROW_INDEX; row <= range.e.r; row += 1) {
+      const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
+      if (!cell) continue;
+      if (parseLine(cell.w || cell.v)) {
+        hasParseableData = true;
+        break;
+      }
+    }
+
+    if (!hasParseableData) continue;
+
+    const rawValue = String(headerRow[col] || "").trim();
+    const value = rawValue.replace(/^"+|"+$/g, "").trim();
+    ignored.push({ col, value: value || "(unnamed)" });
+  }
+  return ignored;
+}
+
+function populateRange(sheet, range, headerRow, targetData, startCol, endCol) {
   for (let row = DATA_START_ROW_INDEX; row <= range.e.r; row += 1) {
-    const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
-    if (!cell) continue;
+    for (let col = startCol; col <= endCol; col += 1) {
+      const langName = String(headerRow[col] || "").trim();
+      if (!langName) continue;
 
-    const parsed = parseLine(cell.w || cell.v);
-    if (!parsed) continue;
+      const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
+      if (!cell) continue;
 
-    targetData[parsed.key] = parsed.value;
+      const parsed = parseLine(cell.w || cell.v);
+      if (!parsed) continue;
+
+      targetData[langName][parsed.key] = parsed.value;
+    }
   }
 }
 
@@ -36,13 +89,34 @@ function buildExportData(workbook) {
   }
 
   const range = XLSX.utils.decode_range(sheet["!ref"]);
-  const translationData = {};
-  const eulaData = {};
+  const headerRow = buildHeaderRow(sheet);
+  const ignoredHeaders = getIgnoredHeaderColumns(sheet, range, headerRow);
 
-  populateColumn(sheet, range, translationData, TRANSLATION_COL);
-  populateColumn(sheet, range, eulaData, EULA_COL);
+  const translationData = initLanguageBuckets(
+    headerRow,
+    TRANSLATION_COL_START,
+    TRANSLATION_COL_END,
+  );
+  const eulaData = initLanguageBuckets(headerRow, EULA_COL_START, EULA_COL_END);
 
-  return { translationData, eulaData };
+  populateRange(
+    sheet,
+    range,
+    headerRow,
+    translationData,
+    TRANSLATION_COL_START,
+    TRANSLATION_COL_END,
+  );
+  populateRange(
+    sheet,
+    range,
+    headerRow,
+    eulaData,
+    EULA_COL_START,
+    EULA_COL_END,
+  );
+
+  return { translationData, eulaData, ignoredHeaders };
 }
 
 function toJsonFileContent(dict) {
@@ -84,21 +158,29 @@ async function writeExportFilesToDestination(
 ) {
   let fileCount = 0;
 
-  await writeJsonFile(
-    rootHandle,
-    LANG_FOLDER,
-    "translation.json",
-    toJsonFileContent(translationData),
-  );
-  fileCount += 1;
+  for (const [lang, dict] of Object.entries(translationData)) {
+    const folder = normalizeLangFolder(lang);
+    if (!folder) continue;
+    await writeJsonFile(
+      rootHandle,
+      folder,
+      "translation.json",
+      toJsonFileContent(dict),
+    );
+    fileCount += 1;
+  }
 
-  await writeJsonFile(
-    rootHandle,
-    LANG_FOLDER,
-    "eula.json",
-    toJsonFileContent(eulaData),
-  );
-  fileCount += 1;
+  for (const [lang, dict] of Object.entries(eulaData)) {
+    const folder = normalizeLangFolder(lang);
+    if (!folder) continue;
+    await writeJsonFile(
+      rootHandle,
+      folder,
+      "eula.json",
+      toJsonFileContent(dict),
+    );
+    fileCount += 1;
+  }
 
   return fileCount;
 }
@@ -122,7 +204,16 @@ export async function exportHS(file, destinationHandle) {
     );
   }
 
-  const { translationData, eulaData } = buildExportData(workbook);
+  const { translationData, eulaData, ignoredHeaders } =
+    buildExportData(workbook);
+  const warnings = [];
+  if (ignoredHeaders.length > 0) {
+    warnings.push(
+      `Ignored header columns K-M: ${ignoredHeaders
+        .map((item) => `${item.value} (col ${item.col + 1})`)
+        .join(", ")}`,
+    );
+  }
 
   await ensureDirectoryPermission(destinationHandle);
   const fileCount = await writeExportFilesToDestination(
@@ -137,6 +228,6 @@ export async function exportHS(file, destinationHandle) {
     filesCreated: fileCount,
     output: "destination",
     destination: destinationHandle.name,
-    warnings: [],
+    warnings,
   };
 }
