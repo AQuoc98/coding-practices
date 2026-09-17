@@ -4,15 +4,27 @@ const SHEET_NAME = "json_tranlsation";
 const HEADER_ROW_INDEX = 1; // Excel row 2
 const DATA_START_ROW_INDEX = 2; // Excel row 3 and onwards
 const TRANSLATION_COL_START = 1; // Column B
-const TRANSLATION_COL_END = 9; // Column J
+const TRANSLATION_COL_END = 10; // Column K
 const EULA_COL_START = 13; // Column N
-const EULA_COL_END = 21; // Column V
+const EULA_COL_END = 23; // Column X
+
+const LANG_FOLDER_MAP = {
+  english: "en",
+  french: "fr",
+  danish: "dk",
+  german: "de",
+  polish: "pl",
+  spanish: "es",
+  finnish: "fi",
+  czech: "cz",
+  italian: "it",
+  swedish: "se",
+};
 
 function normalizeLangFolder(lang) {
   if (!lang) return "";
   const lowered = String(lang).trim().toLowerCase();
-  if (lowered === "italian") return "ita";
-  return lowered.substring(0, 2);
+  return LANG_FOLDER_MAP[lowered] || "";
 }
 
 function parseLine(rawValue) {
@@ -36,7 +48,7 @@ function initLanguageBuckets(headerRow, startCol, endCol) {
   const data = {};
   for (let col = startCol; col <= endCol; col += 1) {
     const langName = String(headerRow[col] || "").trim();
-    if (langName) data[langName] = {};
+    if (normalizeLangFolder(langName)) data[langName] = {};
   }
   return data;
 }
@@ -67,7 +79,7 @@ function populateRange(sheet, range, headerRow, targetData, startCol, endCol) {
   for (let row = DATA_START_ROW_INDEX; row <= range.e.r; row += 1) {
     for (let col = startCol; col <= endCol; col += 1) {
       const langName = String(headerRow[col] || "").trim();
-      if (!langName) continue;
+      if (!langName || !targetData[langName]) continue;
 
       const cell = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
       if (!cell) continue;
@@ -82,8 +94,7 @@ function populateRange(sheet, range, headerRow, targetData, startCol, endCol) {
 
 function buildExportData(workbook) {
   const sheet =
-    workbook.Sheets[SHEET_NAME] ||
-    workbook.Sheets[workbook.SheetNames[0]];
+    workbook.Sheets[SHEET_NAME] || workbook.Sheets[workbook.SheetNames[0]];
   if (!sheet) {
     throw new Error(`Sheet "${SHEET_NAME}" not found`);
   }
@@ -209,7 +220,7 @@ export async function exportHS(file, destinationHandle) {
   const warnings = [];
   if (ignoredHeaders.length > 0) {
     warnings.push(
-      `Ignored header columns K-M: ${ignoredHeaders
+      `Ignored header columns L-M: ${ignoredHeaders
         .map((item) => `${item.value} (col ${item.col + 1})`)
         .join(", ")}`,
     );

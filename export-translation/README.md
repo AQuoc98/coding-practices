@@ -83,9 +83,9 @@ Destination behavior:
 - EULA columns: N..V
 - Data rows start at Excel row 3
 - Cell format: "key": "value"
-- Supported languages: English, Spanish, Swedish, Norwegian, Polish, German, Danish, French, Italian.
+- Supported languages: English, French, Danish, German, Polish, Spanish, Finnish, Czech, Italian, Swedish.
 - Each language is written to its own folder (`<lang>/translation.json` and `<lang>/eula.json`).
-- Italian is written to the `ita/` folder; other language folders use the first two lowercase characters.
+- Only the languages listed above are exported. Language folders use the configured values: `English -> en`, `French -> fr`, `Danish -> dk`, `German -> de`, `Polish -> pl`, `Spanish -> es`, `Finnish -> fi`, `Czech -> cz`, `Italian -> it`, and `Swedish -> se`.
 
 ## Browser Adaptation Note
 
