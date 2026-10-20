@@ -6,7 +6,7 @@ const DATA_START_ROW_INDEX = 2; // Excel rows 3 and onwards
 const TRANSLATION_COL_START = 1; // Column B
 const TRANSLATION_COL_END = 11; // Column L
 const EULA_COL_START = 15; // Column P
-const EULA_COL_END = 25; // Column Z
+const EULA_COL_END = 26; // Column AA (UK)
 
 function normalizeLangFolder(lang) {
   if (!lang) return "";

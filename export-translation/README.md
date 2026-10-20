@@ -57,12 +57,15 @@ Destination behavior:
 - Worksheet name: json_tranlsation
 - Important: the worksheet name intentionally uses the original typo and must match exactly. For CSV inputs (which have no sheet names), the first sheet is used as a fallback.
 - Header row: Excel row 2
-- Translation columns: B..J
-- EULA columns: N..V
+- Translation columns: B..L
+- EULA columns: P..AA (Portuguese in Z, UK in AA)
 - Data rows start at Excel row 3
 - Cell format: "key": "value"
 - Language folder mapping:
   - italian -> ita
+  - finnish -> fi
+  - portuguese -> pt
+  - UK -> uk
   - all other languages -> first two lowercase characters
 
 ## Parsing Rules (ACE)
