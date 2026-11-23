@@ -1,0 +1,31 @@
+name: Todo CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  todo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install browser test dependencies
+        if: ${{ hashFiles('todo/index.html') != '' }}
+        run: |
+          npm install --prefix "$RUNNER_TEMP/todo-ci" playwright@1.56.1
+          "$RUNNER_TEMP/todo-ci/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Test todo interactions
+        if: ${{ hashFiles('todo/index.html') != '' }}
+        env:
+          NODE_PATH: ${{ runner.temp }}/todo-ci/node_modules
+        run: node .github/tests/todo.cjs
+      - name: Report absent todo app
+        if: ${{ hashFiles('todo/index.html') == '' }}
+        run: echo 'Todo app is not present in this revision.'
