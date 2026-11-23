@@ -3,30 +3,10 @@ const input = document.querySelector('#todo-input');
 const list = document.querySelector('#todo-list');
 const empty = document.querySelector('#empty');
 const status = document.querySelector('#status');
-const storageKey = 'coding-practices-todos';
 let tasks = [];
 
-try {
-  const saved = JSON.parse(localStorage.getItem(storageKey) || '[]');
-  if (Array.isArray(saved)) {
-    tasks = saved.filter(task => task && typeof task.text === 'string' && typeof task.done === 'boolean');
-  }
-} catch {
-  status.textContent = 'Saved tasks could not be loaded.';
-}
-
-function save() {
-  try {
-    localStorage.setItem(storageKey, JSON.stringify(tasks));
-    return true;
-  } catch {
-    status.textContent = 'Changes could not be saved in this browser.';
-    return false;
-  }
-}
-
 function announce(message) {
-  if (save()) status.textContent = message;
+  status.textContent = message;
 }
 
 function render() {
@@ -34,18 +14,8 @@ function render() {
   empty.hidden = tasks.length > 0;
   tasks.forEach((task, index) => {
     const item = document.createElement('li');
-    item.classList.toggle('done', task.done);
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.id = `task-${index}`;
-    checkbox.checked = task.done;
-    checkbox.addEventListener('change', () => {
-      task.done = checkbox.checked;
-      item.classList.toggle('done', task.done);
-      announce(task.done ? 'Task completed.' : 'Task marked incomplete.');
-    });
-    const label = document.createElement('label');
-    label.htmlFor = checkbox.id;
+    const label = document.createElement('span');
+    label.className = 'task-text';
     label.textContent = task.text;
     const edit = document.createElement('button');
     edit.type = 'button';
@@ -99,7 +69,7 @@ function render() {
       render();
       input.focus();
     });
-    item.append(checkbox, label, edit, remove);
+    item.append(label, edit, remove);
     list.append(item);
   });
 }
@@ -112,7 +82,7 @@ form.addEventListener('submit', event => {
     input.reportValidity();
     return;
   }
-  tasks.push({ text, done: false });
+  tasks.push({ text });
   announce('Task added.');
   input.value = '';
   render();
