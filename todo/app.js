@@ -2,8 +2,10 @@ const form = document.querySelector('#todo-form');
 const input = document.querySelector('#todo-input');
 const list = document.querySelector('#todo-list');
 const empty = document.querySelector('#empty');
+const filter = document.querySelector('#todo-filter');
 const status = document.querySelector('#status');
 let tasks = [];
+const editing = new Map();
 
 function announce(message) {
   status.textContent = message;
@@ -11,8 +13,16 @@ function announce(message) {
 
 function render() {
   list.replaceChildren();
-  empty.hidden = tasks.length > 0;
-  tasks.forEach((task, index) => {
+  const query = filter.value.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matcher = new RegExp(query, 'iu');
+  const visibleTasks = tasks.filter(task => matcher.test(task.text));
+  empty.hidden = visibleTasks.length > 0;
+  empty.textContent = tasks.length === 0 ? 'No tasks yet. Add one above.' : 'No matching tasks.';
+  visibleTasks.forEach(task => {
+    if (editing.has(task)) {
+      list.append(editing.get(task));
+      return;
+    }
     const item = document.createElement('li');
     const label = document.createElement('span');
     label.className = 'task-text';
@@ -43,18 +53,25 @@ function render() {
           return;
         }
         task.text = value;
+        editing.delete(task);
         announce('Task updated.');
-        render();
-        list.children[index].querySelector('button').focus();
+        const visibleIndex = render().indexOf(task);
+        (list.children[visibleIndex]?.querySelector('button') || filter).focus();
       }
       field.addEventListener('input', () => field.setCustomValidity(''));
       field.addEventListener('keydown', event => {
         if (event.key === 'Enter') finish();
-        if (event.key === 'Escape') { render(); list.children[index].querySelector('button').focus(); }
+        if (event.key === 'Escape') cancelEdit();
       });
+      function cancelEdit() {
+        editing.delete(task);
+        const visibleIndex = render().indexOf(task);
+        (list.children[visibleIndex]?.querySelector('button') || filter).focus();
+      }
       saveButton.addEventListener('click', finish);
-      cancel.addEventListener('click', () => { render(); list.children[index].querySelector('button').focus(); });
+      cancel.addEventListener('click', cancelEdit);
       item.replaceChildren(field, saveButton, cancel);
+      editing.set(task, item);
       field.focus();
       field.select();
     });
@@ -64,7 +81,7 @@ function render() {
     remove.textContent = 'Delete';
     remove.setAttribute('aria-label', `Delete ${task.text}`);
     remove.addEventListener('click', () => {
-      tasks.splice(index, 1);
+      tasks.splice(tasks.indexOf(task), 1);
       announce('Task deleted.');
       render();
       input.focus();
@@ -72,6 +89,7 @@ function render() {
     item.append(label, edit, remove);
     list.append(item);
   });
+  return visibleTasks;
 }
 
 form.addEventListener('submit', event => {
@@ -87,6 +105,10 @@ form.addEventListener('submit', event => {
   input.value = '';
   render();
   input.focus();
+});
+filter.addEventListener('input', () => {
+  render();
+  announce(`${list.children.length} matching tasks.`);
 });
 input.addEventListener('input', () => input.setCustomValidity(''));
 render();
