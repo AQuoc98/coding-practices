@@ -2,6 +2,7 @@ const form = document.querySelector('#todo-form');
 const input = document.querySelector('#todo-input');
 const list = document.querySelector('#todo-list');
 const empty = document.querySelector('#empty');
+const filter = document.querySelector('#todo-filter');
 const status = document.querySelector('#status');
 let tasks = [];
 
@@ -11,8 +12,11 @@ function announce(message) {
 
 function render() {
   list.replaceChildren();
-  empty.hidden = tasks.length > 0;
-  tasks.forEach((task, index) => {
+  const query = filter.value.trim().toLocaleLowerCase();
+  const visibleTasks = tasks.filter(task => task.text.toLocaleLowerCase().includes(query));
+  empty.hidden = visibleTasks.length > 0;
+  empty.textContent = tasks.length === 0 ? 'No tasks yet. Add one above.' : 'No matching tasks.';
+  visibleTasks.forEach((task, index) => {
     const item = document.createElement('li');
     const label = document.createElement('span');
     label.className = 'task-text';
@@ -45,7 +49,8 @@ function render() {
         task.text = value;
         announce('Task updated.');
         render();
-        list.children[index].querySelector('button').focus();
+        const visibleIndex = tasks.filter(entry => entry.text.toLocaleLowerCase().includes(filter.value.trim().toLocaleLowerCase())).indexOf(task);
+        (list.children[visibleIndex]?.querySelector('button') || filter).focus();
       }
       field.addEventListener('input', () => field.setCustomValidity(''));
       field.addEventListener('keydown', event => {
@@ -64,7 +69,7 @@ function render() {
     remove.textContent = 'Delete';
     remove.setAttribute('aria-label', `Delete ${task.text}`);
     remove.addEventListener('click', () => {
-      tasks.splice(index, 1);
+      tasks.splice(tasks.indexOf(task), 1);
       announce('Task deleted.');
       render();
       input.focus();
@@ -87,6 +92,10 @@ form.addEventListener('submit', event => {
   input.value = '';
   render();
   input.focus();
+});
+filter.addEventListener('input', () => {
+  render();
+  announce(`${list.children.length} matching tasks.`);
 });
 input.addEventListener('input', () => input.setCustomValidity(''));
 render();
