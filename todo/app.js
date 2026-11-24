@@ -1,6 +1,7 @@
 const form = document.querySelector('#todo-form');
 const input = document.querySelector('#todo-input');
 const labelInput = document.querySelector('#label-input');
+const priorityInput = document.querySelector('#priority-input');
 const list = document.querySelector('#todo-list');
 const empty = document.querySelector('#empty');
 const filter = document.querySelector('#todo-filter');
@@ -31,6 +32,9 @@ function render() {
     const badge = document.createElement('span');
     badge.className = 'task-label';
     badge.textContent = task.label || '';
+    const priority = document.createElement('span');
+    priority.className = 'task-priority';
+    priority.textContent = `Priority: ${task.priority}`;
     const edit = document.createElement('button');
     edit.type = 'button';
     edit.className = 'secondary';
@@ -46,6 +50,10 @@ function render() {
       labelField.maxLength = 40;
       labelField.value = task.label || '';
       labelField.setAttribute('aria-label', 'Edit label');
+      const priorityField = priorityInput.cloneNode(true);
+      priorityField.removeAttribute('id');
+      priorityField.setAttribute('aria-label', 'Edit priority');
+      priorityField.value = task.priority;
       const saveButton = document.createElement('button');
       saveButton.type = 'button';
       saveButton.textContent = 'Save';
@@ -62,13 +70,14 @@ function render() {
         }
         task.text = value;
         task.label = labelField.value.trim();
+        task.priority = priorityField.value;
         editing.delete(task);
         announce('Task updated.');
         const visibleIndex = render().indexOf(task);
         (list.children[visibleIndex]?.querySelector('button') || filter).focus();
       }
       field.addEventListener('input', () => field.setCustomValidity(''));
-      [field, labelField].forEach(editField => editField.addEventListener('keydown', event => {
+      [field, labelField, priorityField].forEach(editField => editField.addEventListener('keydown', event => {
         if (event.key === 'Enter') {
           event.preventDefault();
           finish();
@@ -82,7 +91,7 @@ function render() {
       }
       saveButton.addEventListener('click', finish);
       cancel.addEventListener('click', cancelEdit);
-      item.replaceChildren(field, labelField, saveButton, cancel);
+      item.replaceChildren(field, labelField, priorityField, saveButton, cancel);
       editing.set(task, item);
       field.focus();
       field.select();
@@ -98,7 +107,7 @@ function render() {
       render();
       input.focus();
     });
-    item.append(label, badge, edit, remove);
+    item.append(label, badge, priority, edit, remove);
     list.append(item);
   });
   return visibleTasks;
@@ -112,7 +121,8 @@ form.addEventListener('submit', event => {
     input.reportValidity();
     return;
   }
-  tasks.push({ text, label: labelInput.value.trim() });
+  tasks.push({ text, label: labelInput.value.trim(), priority: priorityInput.value });
+  priorityInput.value = 'Medium';
   labelInput.value = '';
   announce('Task added.');
   input.value = '';
