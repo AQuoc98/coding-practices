@@ -5,7 +5,7 @@ main { max-width: 42rem; margin: 0 auto; padding: 2rem; background: white; borde
 h1 { margin-top: 0; }
 label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
 .add-row { display: flex; gap: 0.5rem; }
-input[type="search"], input[type="text"], input:not([type]) { min-width: 0; flex: 1; padding: 0.65rem; border: 1px solid #667085; border-radius: 0.35rem; font: inherit; }
+input[type="search"], input[type="text"], input:not([type]), select { min-width: 0; flex: 1; padding: 0.65rem; border: 1px solid #667085; border-radius: 0.35rem; font: inherit; }
 button { padding: 0.65rem 0.85rem; border: 1px solid #1648a0; border-radius: 0.35rem; background: #1648a0; color: white; font: inherit; cursor: pointer; }
 button.secondary { background: white; color: #1648a0; }
 :focus-visible { outline: 3px solid #ed9b1a; outline-offset: 2px; }
