@@ -12,8 +12,9 @@ function announce(message) {
 
 function render() {
   list.replaceChildren();
-  const query = filter.value.trim().toLocaleLowerCase();
-  const visibleTasks = tasks.filter(task => task.text.toLocaleLowerCase().includes(query));
+  const query = filter.value.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const matcher = new RegExp(query, 'iu');
+  const visibleTasks = tasks.filter(task => matcher.test(task.text));
   empty.hidden = visibleTasks.length > 0;
   empty.textContent = tasks.length === 0 ? 'No tasks yet. Add one above.' : 'No matching tasks.';
   visibleTasks.forEach((task, index) => {
@@ -48,8 +49,7 @@ function render() {
         }
         task.text = value;
         announce('Task updated.');
-        render();
-        const visibleIndex = tasks.filter(entry => entry.text.toLocaleLowerCase().includes(filter.value.trim().toLocaleLowerCase())).indexOf(task);
+        const visibleIndex = render().indexOf(task);
         (list.children[visibleIndex]?.querySelector('button') || filter).focus();
       }
       field.addEventListener('input', () => field.setCustomValidity(''));
@@ -77,6 +77,7 @@ function render() {
     item.append(label, edit, remove);
     list.append(item);
   });
+  return visibleTasks;
 }
 
 form.addEventListener('submit', event => {
