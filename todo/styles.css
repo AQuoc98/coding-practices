@@ -17,3 +17,6 @@ li .task-text { flex: 1; margin: 0; overflow-wrap: anywhere; font-weight: normal
 
 #todo-form { margin-bottom: 1rem; }
 #todo-filter { width: 100%; }
+.task-label:not(:empty) { padding: 0.2rem 0.5rem; border-radius: 0.4rem; background: #e5edfc; overflow-wrap: anywhere; }
+#label-input { width: 100%; margin-bottom: 0.5rem; }
+#todo-form label:not(:first-child) { margin-top: 0.75rem; }

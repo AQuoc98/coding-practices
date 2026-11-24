@@ -1,5 +1,6 @@
 const form = document.querySelector('#todo-form');
 const input = document.querySelector('#todo-input');
+const labelInput = document.querySelector('#label-input');
 const list = document.querySelector('#todo-list');
 const empty = document.querySelector('#empty');
 const filter = document.querySelector('#todo-filter');
@@ -27,6 +28,9 @@ function render() {
     const label = document.createElement('span');
     label.className = 'task-text';
     label.textContent = task.text;
+    const badge = document.createElement('span');
+    badge.className = 'task-label';
+    badge.textContent = task.label || '';
     const edit = document.createElement('button');
     edit.type = 'button';
     edit.className = 'secondary';
@@ -38,6 +42,10 @@ function render() {
       field.maxLength = 200;
       field.value = task.text;
       field.setAttribute('aria-label', 'Edit task');
+      const labelField = document.createElement('input');
+      labelField.maxLength = 40;
+      labelField.value = task.label || '';
+      labelField.setAttribute('aria-label', 'Edit label');
       const saveButton = document.createElement('button');
       saveButton.type = 'button';
       saveButton.textContent = 'Save';
@@ -53,16 +61,20 @@ function render() {
           return;
         }
         task.text = value;
+        task.label = labelField.value.trim();
         editing.delete(task);
         announce('Task updated.');
         const visibleIndex = render().indexOf(task);
         (list.children[visibleIndex]?.querySelector('button') || filter).focus();
       }
       field.addEventListener('input', () => field.setCustomValidity(''));
-      field.addEventListener('keydown', event => {
-        if (event.key === 'Enter') finish();
+      [field, labelField].forEach(editField => editField.addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          finish();
+        }
         if (event.key === 'Escape') cancelEdit();
-      });
+      }));
       function cancelEdit() {
         editing.delete(task);
         const visibleIndex = render().indexOf(task);
@@ -70,7 +82,7 @@ function render() {
       }
       saveButton.addEventListener('click', finish);
       cancel.addEventListener('click', cancelEdit);
-      item.replaceChildren(field, saveButton, cancel);
+      item.replaceChildren(field, labelField, saveButton, cancel);
       editing.set(task, item);
       field.focus();
       field.select();
@@ -86,7 +98,7 @@ function render() {
       render();
       input.focus();
     });
-    item.append(label, edit, remove);
+    item.append(label, badge, edit, remove);
     list.append(item);
   });
   return visibleTasks;
@@ -100,7 +112,8 @@ form.addEventListener('submit', event => {
     input.reportValidity();
     return;
   }
-  tasks.push({ text });
+  tasks.push({ text, label: labelInput.value.trim() });
+  labelInput.value = '';
   announce('Task added.');
   input.value = '';
   render();
